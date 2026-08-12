@@ -1,0 +1,44 @@
+name: Keep Repository Active
+
+on:
+  schedule:
+    - cron: "0 9 */5 * *"
+
+  workflow_dispatch:
+
+jobs:
+  keep-active:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "sprhackz003@gmail.com"
+
+      - name: Update activity file
+        run: |
+          echo "Last maintenance: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" \
+            > .github/repository-activity.txt
+
+      - name: Commit changes
+        run: |
+          git add .github/repository-activity.txt
+
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: repository maintenance"
+
+      - name: Push changes
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          git push
